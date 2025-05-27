@@ -7,7 +7,6 @@ with open('maze-map.txt','r') as f:
 first_pos = [rnd.randint(0,len(maze)-1),rnd.randint(0,len(maze[0])-1)]
 while maze[first_pos[1]][first_pos[0]] == 1:
     first_pos = [rnd.randint(0, len(maze)-1),rnd.randint(0, len(maze[0])-1)]
-print(first_pos)
 pg.init()
 disp = pg.display.set_mode((len(maze[0])*80, len(maze)*80))
 disp.fill((255,255,255))
@@ -23,6 +22,14 @@ while runnig:
     pg.draw.rect(disp, (0, 255, 0),(first_pos[0]*80+5,first_pos[1]*80+5,70,70))
     pg.display.update()
     for event in pg.event.get():
+        sens = ''
+        for dr,dc in [[-1,0],[1,0],[0,-1],[0,1]]:
+            if first_pos[1]+dr >= 0 and first_pos[1]+dr < len(maze) and first_pos[0]+dc >= 0 and first_pos[0]+dc < len(maze[0]):
+                if maze[first_pos[1]+dr][first_pos[0]+dc] == 1:
+                    sens += '1'
+                else:
+                    sens += '0'
+        print(sens)
         if event.type == pg.QUIT:
             pg.quit()
             running = False
