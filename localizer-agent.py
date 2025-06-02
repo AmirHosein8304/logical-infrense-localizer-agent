@@ -19,7 +19,6 @@ symbol_names = [[f"wall_n{i}",f"wall_s{i}",f"wall_w{i}",f"wall_e{i}"] for i in r
 symbol_names = [val for item in symbol_names for val in item]
 names_string = " ".join(symbol_names)
 d_sym = symbols(names_string)
-exp = And(*d_sym)
 
 for i in range(len(maze)):
     for j in range(len(maze[0])):
@@ -32,13 +31,15 @@ for i in range(len(maze)):
                 dr, dc = [-1,1,0,0][k], [0,0,-1,1][k]
                 if i+dr >= 0 and i+dr < len(maze) and j+dc >= 0 and j+dc < len(maze[0]):
                     if maze[i+dr][j+dc] == 1:
-                        exp.subs({d_sym[(i*len(maze[0])+j)*4+k]:True})
+                        d_sym[(i*len(maze[0])+j)*4+k].subs({d_sym[(i*len(maze[0])+j)*4+k]:True})
 
 runnig = True
 check = False
 history = []
+steps = 0
 
-while runnig:
+while runnig and steps<10:
+    steps+=1
     pg.draw.rect(disp, (0, 255, 0),(first_pos[0]*80+5,first_pos[1]*80+5,70,70))
     pg.display.update()
     for event in pg.event.get():
