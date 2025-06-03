@@ -10,14 +10,12 @@ def load_maze(filename):
 maze = load_maze('maze-map.txt')
 
 
-def Logic_maker(old, current, action):
-
-    old_sym = symbols(f"Pos_{old[0]}_{old[1]}")
+def Logic_maker(old_percept, new_percept, action):
+    old_sym = symbols(f"Percept_{''.join(map(str, old_percept))}")
     action_sym = symbols(f"Action_{action}")
-    new_sym = symbols(f"Pos_{current[0]}_{current[1]}")
+    new_sym = symbols(f"Percept_{''.join(map(str, new_percept))}")
     
-    logic_expr = Implies(And(old_sym, action_sym), new_sym)
-    return logic_expr
+    return Implies(And(old_sym, action_sym), new_sym)
 
 
 def get_percept(maze, r, c):
@@ -38,46 +36,77 @@ def expected_percept(maze, r, c):
 
 def final_pos_guesser(maze, knowledge_base):
     rows, cols = len(maze), len(maze[0])
-    possible_starts = [(r, c) for r in range(rows) for c in range(cols) if maze[r][c] == 0]
     valid_final_positions = set()
 
-    for start in possible_starts:
-        pos = start
-        valid = True
-        for expr in knowledge_base:
-            # Parse expression: (Pos_r_c & Action_X) → Pos_r2_c2
-            if not isinstance(expr.args[0], And):
-                valid = False
-                break
-            
-            premise = expr.args[0]  # And(Pos_r_c, Action_X)
-            conclusion = expr.args[1]  # Pos_r2_c2
+    for r in range(rows):
+        for c in range(cols):
+            if maze[r][c] == 1:
+                continue  # skip walls
 
-            # Extract old_pos and action from premise
-            old_symbol = premise.args[0]
-            action_symbol = premise.args[1]
+            pos = (r, c)
+            percept = get_percept(maze, r, c)
+            valid = True
 
-            # Match current simulated position and intended transition
-            expected_old = f"Pos_{pos[0]}_{pos[1]}"
-            if str(old_symbol) != expected_old:
-                valid = False
-                break
+            for expr in knowledge_base:
+                premise = expr.args[0]  # an And(...)
+                conclusion = expr.args[1]  # a Percept_YYYY
 
-            # Extract target from conclusion
-            next_pos_parts = str(conclusion).split("_")
-            new_r = int(next_pos_parts[1])
-            new_c = int(next_pos_parts[2])
-            pos = (new_r, new_c)
+                # Extract old_sym (Percept_....) and action_sym (Action_...) from premise.args
+                old_sym = None
+                action_sym = None
+                for sym in premise.args:
+                    name = str(sym)
+                    if name.startswith("Percept_"):
+                        old_sym = sym
+                    elif name.startswith("Action_"):
+                        action_sym = sym
 
-            # Check that we don’t walk into walls
-            if not (0 <= pos[0] < rows and 0 <= pos[1] < cols and maze[pos[0]][pos[1]] == 0):
-                valid = False
-                break
+                # If we didn’t find exactly one Percept_ and one Action_, bail out
+                if old_sym is None or action_sym is None:
+                    valid = False
+                    break
 
-        if valid:
-            valid_final_positions.add(pos)
+                # 1) Check that the current percept matches old_sym
+                expected_old_sym = "Percept_" + "".join(map(str, percept))
+                if str(old_sym) != expected_old_sym:
+                    valid = False
+                    break
+
+                # 2) Extract the action string (e.g. "W" from "Action_W")
+                action = str(action_sym).split("_", 1)[1]
+
+                # 3) Simulate the move on (r,c)
+                r2, c2 = pos
+                if action == "W":
+                    r2 -= 1
+                elif action == "S":
+                    r2 += 1
+                elif action == "A":
+                    c2 -= 1
+                elif action == "D":
+                    c2 += 1
+
+                # 4) If that new cell is invalid (out of bounds or a wall), no good
+                if not (0 <= r2 < rows and 0 <= c2 < cols and maze[r2][c2] == 0):
+                    valid = False
+                    break
+
+                # 5) Compute the new percept at (r2,c2)
+                percept = get_percept(maze, r2, c2)
+                expected_new_sym = "Percept_" + "".join(map(str, percept))
+                # 6) Check that matches conclusion
+                if str(conclusion) != expected_new_sym:
+                    valid = False
+                    break
+
+                # 7) Move on to the next step
+                pos = (r2, c2)
+
+            if valid:
+                valid_final_positions.add(pos)
 
     return valid_final_positions
+
 
 
 cell_size = 80
