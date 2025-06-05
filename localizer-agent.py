@@ -1,3 +1,7 @@
+'''اعضای گروه:
+امیرحسین شاکری:40218593
+محمدرضا طاهری:40219213
+امیرحسین توکلی:40216123'''
 import pygame as pg
 import random as rnd
 from sympy import symbols
