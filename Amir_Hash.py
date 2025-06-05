@@ -19,6 +19,13 @@ def update_tkinter_belief_state(belief_set):
     belief_state_label.config(text=text_to_display)
     left_pannel.update()
 
+def update_tkinter_history(shown_p_h):
+    shown_p_h = [",".join(map(str, shown_p_h[i:i+2])) for i in range(0, len(shown_p_h), 2)]
+    text_to_display = " | ".join(shown_p_h)
+    history_label.config(text=f"History:\n{text_to_display}")
+    right_pannel.update()
+    
+
 def Logic_maker(old_percept, new_percept, action):
     old_sym = symbols(f"Percept_{''.join(map(str, old_percept))}")
     action_sym = symbols(f"Action_{action}")
@@ -97,6 +104,11 @@ left_pannel.title("Belief State Panel")
 left_pannel.geometry("400x300")
 belief_state_label = tk.Label(left_pannel, text="Belief State will appear here.", wraplength=380, justify="left", font=("Arial", 10))
 belief_state_label.pack(pady=10, padx=10)
+right_pannel = tk.Tk()
+right_pannel.title("History Panel")
+right_pannel.geometry("400x300")
+history_label = tk.Label(right_pannel, text="History will appear here.", wraplength=380, justify="left", font=("Arial", 10))
+history_label.pack(pady=10, padx=10)
 
 pg.init()
 disp = pg.display.set_mode((len(maze[0]) * 80, len(maze) * 80))
@@ -109,11 +121,12 @@ percept = get_percept(maze, agent_pos[1], agent_pos[0])
 old_pos = tuple(percept)
 
 percept_history = []
-shown_p_h = []
+shown_p_h = [get_percept(maze, agent_pos[0], agent_pos[1]), "No action done!"]
 timestep = 0
 running = True
 clock = pg.time.Clock()
 update_tkinter_belief_state(final_pos_guesser(maze, percept_history))
+update_tkinter_history(shown_p_h)
 
 while running and timestep < 10:
     disp.fill((255, 255, 255))
@@ -156,7 +169,18 @@ while running and timestep < 10:
 
             if moved:
                 update_tkinter_belief_state(final_pos_guesser(maze, percept_history))
+                update_tkinter_history(shown_p_h)
                 new_pos = get_percept(maze, agent_pos[1], agent_pos[0])
+                shown_act = ""
+                if action == "W":
+                    shown_act = "Up"
+                elif action == "S":
+                    shown_act = "Down"
+                elif action == "A":
+                    shown_act = "Left"
+                else:
+                    shown_act = "Right"
+                shown_p_h.extend([new_pos,shown_act])
                 logic_expr = Logic_maker(old_pos, new_pos, action)
                 percept_history.append(logic_expr)
                 old_pos = new_pos
@@ -167,5 +191,7 @@ while running and timestep < 10:
 pg.quit()
 
 update_tkinter_belief_state(final_pos_guesser(maze, percept_history))
+update_tkinter_history(shown_p_h)
 left_pannel.mainloop()
+right_pannel.mainloop()
 
